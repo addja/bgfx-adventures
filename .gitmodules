@@ -2,3 +2,6 @@
 	path = bgfx.cmake
 	url = git@github.com:bkaradzic/bgfx.cmake.git
 	ignore = dirty
+[submodule "glfw"]
+	path = glfw
+	url = git@github.com:glfw/glfw.git
