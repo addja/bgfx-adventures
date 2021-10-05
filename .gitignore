@@ -32,7 +32,6 @@
 *.app
 
 ## My changes
-bgfx.cmake
 journal.log 
 bld
 
