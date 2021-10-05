@@ -14,5 +14,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 # defines targets and sources
 add_subdirectory(src)
 
-# contains an "bgfx.cmake" library we will link to
+# external libraries
 add_subdirectory(bgfx.cmake)
+add_subdirectory(glfw)
