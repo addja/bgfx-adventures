@@ -15,7 +15,7 @@
 #define WINDOW_WIDTH 1600
 #define WINDOW_HEIGHT 900
 
-int main() {
+GLFWwindow *setupWindow() {
   glfwInit();
   GLFWwindow *window{glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
                                       "bgfx adventures!", nullptr, nullptr)};
@@ -34,6 +34,10 @@ int main() {
                      0);
   bgfx::setViewRect(0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
+  return window;
+}
+
+void gameloop() {
   bgfx::VertexLayout pcvDecl;
   pcvDecl.begin()
       .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
@@ -72,9 +76,18 @@ int main() {
     ++counter;
   }
 
+  bgfx::shutdown();
   bgfx::destroy(ibh);
   bgfx::destroy(vbh);
-  bgfx::shutdown();
+}
+
+void teardown(GLFWwindow *window) {
   glfwDestroyWindow(window);
   glfwTerminate();
+}
+
+int main() {
+  auto window{setupWindow()};
+  gameloop();
+  teardown(window);
 }
