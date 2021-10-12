@@ -11,8 +11,7 @@ bgfx::ShaderHandle loadShader(std::string const &fileName) {
   // here
   assert(bgfx::getRendererType() == bgfx::RendererType::Direct3D12 ||
          bgfx::getRendererType() == bgfx::RendererType::Direct3D11);
-  std::string filePath{"../../../../src/shaders/" +
-                       fileName}; // hardcoded shader path in project
+  std::string filePath{"shaders/" + fileName};
 
   FILE *file{nullptr};
   fopen_s(&file, filePath.c_str(), "rb");
