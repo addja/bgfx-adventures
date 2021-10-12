@@ -1,5 +1,5 @@
 # bgfx-adventures
 Let´s make something with the bgfx framework!
 
-## Dependencies
-https://github.com/bkaradzic/bgfx.cmake
+# First steps
+Making a game loop leveraging threads and a job system
