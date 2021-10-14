@@ -1,12 +1,14 @@
-#include <iostream>
-
 #include "bgfx/bgfx.h"
 #include "bgfx/platform.h"
-
+#include "job/Counter.h"
+#include "job/Job.h"
+#include "job/Queue.h"
 #include "render/ExampleCube.h"
 #include "render/ShaderLoader.h"
-
 #include <bx/math.h>
+#include <iostream>
+#include <tuple>
+#include <utility>
 
 #include "GLFW/glfw3.h"
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -37,6 +39,33 @@ GLFWwindow *setupWindow() {
   return window;
 }
 
+using RenderCubeParams =
+    std::tuple<unsigned int *, bgfx::VertexBufferHandle *,
+               bgfx::IndexBufferHandle *, bgfx::ProgramHandle *>;
+
+void renderCube(void *params) {
+  auto [counter, vbh, ibh, program] =
+      *reinterpret_cast<RenderCubeParams *>(params);
+  const bx::Vec3 at{0.0f, 0.0f, 0.0f};
+  const bx::Vec3 eye{0.0f, 0.0f, -5.0f};
+  float view[16];
+  bx::mtxLookAt(view, eye, at);
+  float proj[16];
+  bx::mtxProj(proj, 60.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f,
+              100.0f, bgfx::getCaps()->homogeneousDepth);
+  bgfx::setViewTransform(0, view, proj);
+
+  float mtx[16];
+  bx::mtxRotateXY(mtx, *counter * 0.01f, *counter * 0.01f);
+  bgfx::setTransform(mtx);
+
+  bgfx::setVertexBuffer(0, *vbh);
+  bgfx::setIndexBuffer(*ibh);
+
+  bgfx::submit(0, *program);
+  bgfx::frame();
+}
+
 void gameloop() {
   bgfx::VertexLayout pcvDecl;
   pcvDecl.begin()
@@ -53,26 +82,19 @@ void gameloop() {
   bgfx::ShaderHandle fsh{render::loadShader("fs_cubes.bin")};
   bgfx::ProgramHandle program{bgfx::createProgram(vsh, fsh, true)};
 
+  job::Counter jobCounter{};
+  job::Queue jobs{jobCounter};
+
   unsigned int counter{0};
+
+  RenderCubeParams renderCubeParams{&counter, &vbh, &ibh, &program};
   while (true) {
-    const bx::Vec3 at{0.0f, 0.0f, 0.0f};
-    const bx::Vec3 eye{0.0f, 0.0f, -5.0f};
-    float view[16];
-    bx::mtxLookAt(view, eye, at);
-    float proj[16];
-    bx::mtxProj(proj, 60.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f,
-                100.0f, bgfx::getCaps()->homogeneousDepth);
-    bgfx::setViewTransform(0, view, proj);
-
-    float mtx[16];
-    bx::mtxRotateXY(mtx, counter * 0.01f, counter * 0.01f);
-    bgfx::setTransform(mtx);
-
-    bgfx::setVertexBuffer(0, vbh);
-    bgfx::setIndexBuffer(ibh);
-
-    bgfx::submit(0, program);
-    bgfx::frame();
+    job::Job renderJob{&renderCube, &renderCubeParams, jobCounter};
+    jobs.push(std::move(renderJob));
+    while (jobCounter.value() != 0) {
+      // busy wait for the moment, let the worker threads consume tasks
+      // TODO: explore std::condition_variable
+    }
     ++counter;
   }
 
