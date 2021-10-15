@@ -6,9 +6,12 @@
 #include "render/ExampleCube.h"
 #include "render/ShaderLoader.h"
 #include <bx/math.h>
+#include <cassert>
 #include <iostream>
+#include <thread>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "GLFW/glfw3.h"
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -66,6 +69,24 @@ void renderCube(void *params) {
   bgfx::frame();
 }
 
+std::vector<std::thread> spawnWorkers(job::Counter &jobCounter,
+                                      job::Queue &jobs) {
+  unsigned int numCores{std::thread::hardware_concurrency()};
+  assert(numCores > 1); // make sure we have worker threads
+  std::vector<std::thread> workers{};
+  while (--numCores) {
+    workers.emplace_back([&]() {
+      while (true) {
+        if (!jobs.empty()) {
+          auto job{jobs.pop()};
+          job.run();
+        }
+      }
+    });
+  }
+  return workers;
+}
+
 void gameloop() {
   bgfx::VertexLayout pcvDecl;
   pcvDecl.begin()
@@ -84,13 +105,18 @@ void gameloop() {
 
   job::Counter jobCounter{};
   job::Queue jobs{jobCounter};
+  std::vector<std::thread> workers{spawnWorkers(jobCounter, jobs)};
 
   unsigned int counter{0};
 
   RenderCubeParams renderCubeParams{&counter, &vbh, &ibh, &program};
   while (true) {
     job::Job renderJob{&renderCube, &renderCubeParams, jobCounter};
-    jobs.push(std::move(renderJob));
+    // jobs.push(std::move(renderJob));
+    ++jobCounter;
+    renderJob
+        .run(); // bgfx API calls must be run on the main thread. See
+                // https://github.com/bkaradzic/bgfx/blob/master/src/bgfx.cpp#L36
     while (jobCounter.value() != 0) {
       // busy wait for the moment, let the worker threads consume tasks
       // TODO: explore std::condition_variable

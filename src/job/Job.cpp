@@ -2,8 +2,9 @@
 
 namespace job {
 
-Job::~Job() { --_counter; }
-
-void Job::run() const { _entryPoint(_param); }
+void Job::run() const {
+  _entryPoint(_param);
+  --_counter;
+}
 
 } // namespace job
