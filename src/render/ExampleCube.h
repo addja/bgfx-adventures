@@ -1,3 +1,8 @@
+#include "bgfx/bgfx.h"
+#include "render/ShaderLoader.h"
+#include <bx/math.h>
+#include <tuple>
+
 namespace render {
 
 // Hardcoded cube used to test the render
@@ -20,5 +25,64 @@ static const uint16_t cubeTriList[]{
     0, 1, 2, 1, 3, 2, 4, 6, 5, 5, 6, 7, 0, 2, 4, 4, 2, 6,
     1, 5, 3, 5, 7, 3, 0, 4, 1, 4, 5, 1, 2, 3, 6, 6, 3, 7,
 };
+
+using RenderCubeParams =
+    std::tuple<unsigned int *, bgfx::VertexBufferHandle *,
+               bgfx::IndexBufferHandle *, bgfx::ProgramHandle *, unsigned int,
+               unsigned int>;
+std::tuple<unsigned int *, bgfx::VertexBufferHandle *,
+           bgfx::IndexBufferHandle *, bgfx::ProgramHandle *, unsigned int,
+           unsigned int>;
+
+void renderCube(void *params) {
+  auto [counter, vbh, ibh, program, windowWidth, windowHeight] =
+      *reinterpret_cast<RenderCubeParams *>(params);
+  const bx::Vec3 at{0.0f, 0.0f, 0.0f};
+  const bx::Vec3 eye{0.0f, 0.0f, -5.0f};
+  float view[16];
+  bx::mtxLookAt(view, eye, at);
+  float proj[16];
+  bx::mtxProj(proj, 60.0f,
+              static_cast<float>(windowWidth) /
+                  static_cast<float>(windowHeight),
+              0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
+  bgfx::setViewTransform(0, view, proj);
+
+  float mtx[16];
+  bx::mtxRotateXY(mtx, *counter * 0.01f, *counter * 0.01f);
+  bgfx::setTransform(mtx);
+
+  bgfx::setVertexBuffer(0, *vbh);
+  bgfx::setIndexBuffer(*ibh);
+
+  bgfx::submit(0, *program);
+  bgfx::frame();
+}
+
+decltype(auto) setup() {
+  bgfx::VertexLayout pcvDecl;
+  pcvDecl.begin()
+      .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+      .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+      .end();
+  bgfx::VertexBufferHandle vbh{bgfx::createVertexBuffer(
+      bgfx::makeRef(render::cubeVertices, sizeof(render::cubeVertices)),
+      pcvDecl)};
+  bgfx::IndexBufferHandle ibh{bgfx::createIndexBuffer(
+      bgfx::makeRef(render::cubeTriList, sizeof(render::cubeTriList)))};
+
+  bgfx::ShaderHandle vsh{loadShader("vs_cubes.bin")};
+  bgfx::ShaderHandle fsh{loadShader("fs_cubes.bin")};
+  bgfx::ProgramHandle program{bgfx::createProgram(vsh, fsh, true)};
+
+  return std::make_tuple(vbh, ibh, program);
+}
+
+void teardown(bgfx::VertexBufferHandle const &vbh,
+              bgfx::IndexBufferHandle const &ibh) {
+  bgfx::shutdown();
+  bgfx::destroy(ibh);
+  bgfx::destroy(vbh);
+}
 
 } // namespace render
