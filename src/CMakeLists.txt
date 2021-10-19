@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 project(main)
 
-add_subdirectory(render)
+add_subdirectory(input)
 add_subdirectory(job)
+add_subdirectory(render)
 
 add_executable(main "main.cpp")
 
@@ -12,8 +13,9 @@ target_link_libraries(main
     bgfx
     bx
     glfw
-    render
+    input
     job
+    render
   )
 
 # ---------------

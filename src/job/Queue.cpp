@@ -10,9 +10,13 @@ void Queue::push(Job const &&job) {
 
 Job Queue::pop() {
   std::lock_guard<std::mutex> lock(_jobs_mutex);
-  auto job{_jobs.front()};
-  _jobs.pop();
-  return job;
+  if (_jobs.empty()) {
+    return Job();
+  } else {
+    auto job{_jobs.front()};
+    _jobs.pop();
+    return job;
+  }
 }
 
 bool Queue::empty() const {

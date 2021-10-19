@@ -10,16 +10,19 @@ using EntryPoint = void(void *);
 
 class Job {
 private:
-  EntryPoint *_entryPoint;
-  void *_param;
-  Counter &_counter;
+  EntryPoint *_entryPoint{nullptr};
+  void *_param{nullptr};
+  Counter &_counter{Counter()};
+  bool _valid{false};
 
 public:
   Job(EntryPoint *entryPoint, void *param, Counter &counter)
-      : _entryPoint{entryPoint}, _param{param}, _counter(counter) {}
-  Job() = delete;
+      : _entryPoint{entryPoint}, _param{param},
+        _counter(counter), _valid{true} {}
+  Job() {}
 
   void run() const;
+  bool valid() const { return _valid; }
 };
 
 } // namespace job

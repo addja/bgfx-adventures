@@ -1,5 +1,7 @@
 #include "bgfx/bgfx.h"
 #include "bgfx/platform.h"
+#include "input/Job.h"
+#include "input/Manager.h"
 #include "job/Counter.h"
 #include "job/Job.h"
 #include "job/Queue.h"
@@ -49,8 +51,7 @@ std::vector<std::thread> spawnWorkers(job::Counter &jobCounter,
   while (--numCores) {
     workers.emplace_back([&]() {
       while (true) {
-        if (!jobs.empty()) {
-          auto job{jobs.pop()};
+        if (auto job{jobs.pop()}; job.valid()) {
           job.run();
         }
       }
@@ -68,6 +69,9 @@ void gameloop() {
 
   unsigned int counter{0};
   while (true) {
+    job::Job inputJob{&input::updateInput, nullptr, jobCounter};
+    jobs.push(std::move(inputJob));
+
     render::RenderCubeParams renderCubeParams{
         &counter, &vbh, &ibh, &program, windowWidth, windowHeight};
     job::Job renderJob{&render::renderCube, &renderCubeParams, jobCounter};
@@ -79,6 +83,8 @@ void gameloop() {
       // busy wait for the moment, let the worker threads consume tasks
       // TODO: explore std::condition_variable
     }
+
+    input::Manager().step();
     ++counter;
   }
 
