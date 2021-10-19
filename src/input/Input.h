@@ -4,9 +4,9 @@ namespace input {
 
 // Hold input state
 
-class Input {
-public:
-  bool foo{false};
+struct Input {
+  bool rotate{false};
+  bool escape{false};
 };
 
 } // namespace input

@@ -8,3 +8,8 @@ add_library(input
      "Job.h"
      "Job.cpp"
      "Input.h")
+
+target_link_libraries(render
+  PRIVATE
+    glfw
+  )

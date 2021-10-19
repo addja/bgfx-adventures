@@ -1,4 +1,5 @@
 #include "bgfx/bgfx.h"
+#include "input/Manager.h"
 #include "render/ShaderLoader.h"
 #include <bx/math.h>
 #include <tuple>
@@ -30,9 +31,6 @@ using RenderCubeParams =
     std::tuple<unsigned int *, bgfx::VertexBufferHandle *,
                bgfx::IndexBufferHandle *, bgfx::ProgramHandle *, unsigned int,
                unsigned int>;
-std::tuple<unsigned int *, bgfx::VertexBufferHandle *,
-           bgfx::IndexBufferHandle *, bgfx::ProgramHandle *, unsigned int,
-           unsigned int>;
 
 void renderCube(void *params) {
   auto [counter, vbh, ibh, program, windowWidth, windowHeight] =
@@ -49,7 +47,11 @@ void renderCube(void *params) {
   bgfx::setViewTransform(0, view, proj);
 
   float mtx[16];
-  bx::mtxRotateXY(mtx, *counter * 0.01f, *counter * 0.01f);
+  float rotation{0};
+  if (input::Manager::instance().currentInput().rotate) {
+    rotation = *counter * 0.01f;
+  }
+  bx::mtxRotateXY(mtx, rotation, rotation);
   bgfx::setTransform(mtx);
 
   bgfx::setVertexBuffer(0, *vbh);

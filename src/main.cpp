@@ -50,7 +50,7 @@ std::vector<std::thread> spawnWorkers(job::Counter &jobCounter,
   std::vector<std::thread> workers{};
   while (--numCores) {
     workers.emplace_back([&]() {
-      while (true) {
+      while (!input::Manager::instance().currentInput().escape) {
         if (auto job{jobs.pop()}; job.valid()) {
           job.run();
         }
@@ -60,7 +60,7 @@ std::vector<std::thread> spawnWorkers(job::Counter &jobCounter,
   return workers;
 }
 
-void gameloop() {
+void gameloop(GLFWwindow *window) {
   auto [vbh, ibh, program] = render::setup();
 
   job::Counter jobCounter{};
@@ -68,24 +68,31 @@ void gameloop() {
   std::vector<std::thread> workers{spawnWorkers(jobCounter, jobs)};
 
   unsigned int counter{0};
-  while (true) {
-    job::Job inputJob{&input::updateInput, nullptr, jobCounter};
-    jobs.push(std::move(inputJob));
+  while (!input::Manager::instance().currentInput().escape) {
+    input::InputJobParams inputJobParams{window};
+    // glfw API calls must be run on the main thread. Cannot use a job for this
+    // job::Job inputJob{&input::updateInput, &inputJobParams, jobCounter};
+    // jobs.push(std::move(inputJob));
+    input::updateInput(inputJobParams);
 
     render::RenderCubeParams renderCubeParams{
         &counter, &vbh, &ibh, &program, windowWidth, windowHeight};
-    job::Job renderJob{&render::renderCube, &renderCubeParams, jobCounter};
-    ++jobCounter;
-    renderJob
-        .run(); // bgfx API calls must be run on the main thread. See
-                // https://github.com/bkaradzic/bgfx/blob/master/src/bgfx.cpp#L36
+    // job::Job renderJob{&render::renderCube, &renderCubeParams, jobCounter};
+    // jobs.push(std::move(renderJob));
+    // bgfx API calls must be run on the main thread. Cannot use a job for this
+    render::renderCube(&renderCubeParams);
+
     while (jobCounter.value() != 0) {
       // busy wait for the moment, let the worker threads consume tasks
       // TODO: explore std::condition_variable
     }
 
-    input::Manager().step();
+    input::Manager::instance().step();
     ++counter;
+  }
+
+  for (auto &thread : workers) {
+    thread.join();
   }
 
   render::teardown(vbh, ibh);
@@ -98,6 +105,6 @@ void teardown(GLFWwindow *window) {
 
 int main() {
   auto window{setupWindow()};
-  gameloop();
+  gameloop(window);
   teardown(window);
 }

@@ -11,15 +11,18 @@ namespace input {
 
 class Manager {
 public:
-  static Manager &instance() { return _instance; }
+  static Manager &instance() {
+    static Manager instance;
+    return instance;
+  }
   Input const &currentInput() const { return _current; }
   Input &futureInput() { return _future; }
   void step() { std::swap(_future, _current); };
 
 private:
-  static Manager _instance;
-  Input _current;
-  Input _future;
+  Input _current{};
+  Input _future{};
+  Manager() {}
 };
 
 } // namespace input
