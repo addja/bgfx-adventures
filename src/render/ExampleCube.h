@@ -82,9 +82,9 @@ decltype(auto) setup() {
 
 void teardown(bgfx::VertexBufferHandle const &vbh,
               bgfx::IndexBufferHandle const &ibh) {
-  bgfx::shutdown();
   bgfx::destroy(ibh);
   bgfx::destroy(vbh);
+  bgfx::shutdown();
 }
 
 } // namespace render

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
-project(render)
+project(render LANGUAGES CXX)
 
 add_library(render
     STATIC

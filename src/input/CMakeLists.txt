@@ -9,7 +9,7 @@ add_library(input
      "Job.cpp"
      "Input.h")
 
-target_link_libraries(render
+target_link_libraries(input
   PRIVATE
     glfw
   )
